@@ -1,8 +1,9 @@
 import express from "express";
-import { readFileSync } from "fs";
 import multer from "multer";
 import UploadToAmazonS3 from "./src/s3";
 import S3 from "aws-sdk/clients/s3";
+import util from "util";
+import fs from "fs";
 
 const s3 = new S3({
   credentials: {
@@ -15,6 +16,8 @@ const s3 = new S3({
 const app = express();
 
 const upload = multer({ dest: 'uploads/' });
+
+const unlinkFile = util.promisify(fs.unlink);
 
 app.get("/images/:key", async (req, res) => {
   const { key } = req.params
@@ -30,8 +33,7 @@ app.get("/images/:key", async (req, res) => {
       res.status(500).send('Error retrieving image from S3');
     } else {
       const imageBuffer = data.Body;
-      res.set('Content-Type', 'image/jpeg');
-      res.send(imageBuffer);
+      res.set('Content-Type', 'image/jpeg').send(imageBuffer);
     }
   });
 })
@@ -41,7 +43,7 @@ app.post("/images", upload.single("image"), async (req, res) => {
   //console.log(file);
   const result = await UploadToAmazonS3.upload(file);
   //console.log(result);
-
+  await unlinkFile(file.path);
   res.send("ok");
 })
 
