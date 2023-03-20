@@ -4,6 +4,7 @@ import UploadToAmazonS3 from "./src/s3";
 import S3 from "aws-sdk/clients/s3";
 import util from "util";
 import fs from "fs";
+import {receiveResponse} from "./src/aws-sqs"
 
 const s3 = new S3({
   credentials: {
@@ -49,6 +50,11 @@ app.post("/images", upload.single("image"), async (req, res) => {
 
 app.get("/", (req, res) => {
   res.send("ok");
+})
+
+app.get("/message", async (req, res) => {
+  const response = await receiveResponse()
+  res.status(200).json(response)
 })
 
 app.listen(3000, () => console.log("Server running."));
